@@ -1,9 +1,9 @@
 import React, {useState} from 'react';
 import {Input, Modal} from "antd";
 
-const EditTaskModal = ({isVisible, inputDescription, handleOnClickSave, handleOnClickCancel}) => {
+const EditTaskModal = ({isVisible, description, handleOnClickSave, handleOnClickCancel}) => {
 
-    const [description , setDescription] = useState(inputDescription || "");
+    const [currentDescription , setDescription] = useState(description || "");
 
     const handleOnChangeInputField = (value) => {
         setDescription(value);
@@ -14,13 +14,13 @@ const EditTaskModal = ({isVisible, inputDescription, handleOnClickSave, handleOn
             <Modal
                 title="Basic Modal"
                 visible={isVisible}
-                onOk={() => handleOnClickSave(description)}
+                onOk={() => handleOnClickSave(currentDescription)}
                 onCancel={handleOnClickCancel}
                 okText={"Save"}
             >
                 <p>"Creating new task"</p>
                 <Input
-                    value={description}
+                    value={currentDescription}
                     placeholder="Your task description"
                     onChange={event => {
                         handleOnChangeInputField(event.target.value)

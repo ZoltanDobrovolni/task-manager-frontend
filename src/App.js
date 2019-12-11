@@ -19,7 +19,6 @@ function App() {
             const tasksWithKey = tasks.data.map(item => {
                 return {key: item._id, ...item}
             })
-            console.log(tasksWithKey);  //  todo delete
 
             setTasks(tasksWithKey);
             setLoading(false);
@@ -56,15 +55,23 @@ function App() {
     };
 
     const handleOnClickEdit = (id) => {
+        console.log("task to edit", tasks.find((task) => task._id === id));
         setTaskForEdit(tasks.find((task) => task._id === id))
     };
 
-    const handleOnClickSaveTaskModal = async (description) => {
-        const url = `${baseUrl}/tasks`;
-        await axios({
+    const handleOnClickSaveTaskModal = (description) => {
+        if (typeof taskForEdit._id === "undefined") {
+            saveNewTask(description);
+        } else {
+            updateTask(description);
+        }
+    };
+
+    function saveNewTask(description) {
+        axios({
             method: "POST",
-            url: url,
-            data: {description, ...taskForEdit}
+            url: `${baseUrl}/tasks`,
+            data: {...taskForEdit, description}
         })
             .then(result => {
                 setTaskForEdit(null);
@@ -73,8 +80,25 @@ function App() {
             .catch(err => {
                 throw new Error(`Something happened while saving task. [${err}]`);
             })
+    }
 
-    };
+    function updateTask(description) {
+        axios({
+            method: "PATCH",
+            url: `${baseUrl}/tasks/${taskForEdit._id}`,
+            data: {...taskForEdit, description}
+        })
+            .then(result => {
+                const newTasks = tasks.filter(task => task._id !== taskForEdit._id);
+                newTasks.push(result.data);
+                setTasks(newTasks);
+                setTaskForEdit(null);
+            })
+            .catch(err => {
+                throw new Error(`Something happened while updating task. [${err}]`);
+            })
+    }
+
 
     const handleOnClickCloseTaskModal = () => {
         setTaskForEdit(null);
@@ -119,8 +143,6 @@ function App() {
             ),
         },
     ];
-
-    console.log("taskForEdit", taskForEdit); // todo delete
 
 
     return (
