@@ -1,7 +1,7 @@
 import React, {useEffect} from 'react';
 import 'antd/dist/antd.css';
 import axios from 'axios';
-import {Button, Divider, Dropdown, Icon, Layout, Menu, Table} from "antd";
+import {Button, Checkbox, Divider, Dropdown, Icon, Layout, Menu, Table} from "antd";
 import {setTaskForEdit} from "./actions/taskForEdit";
 import {setTasks} from "./actions/tasks";
 import {loadingOff, loadingOn} from "./actions/loading";
@@ -27,6 +27,8 @@ function App({tasks, taskForEdit, loading, dispatch}) {
                 key: item._id,
                 ...item
             }));
+
+            console.log("tasks", tasksWithKey); // todo delete
 
             dispatch(setTasks({tasks: tasksWithKey}))
             dispatch(loadingOff())
@@ -100,7 +102,6 @@ function App({tasks, taskForEdit, loading, dispatch}) {
                 const newTasks = tasks.filter(task => task._id !== taskForEdit._id);
                 newTasks.push(result.data);
                 dispatch(setTasks({tasks: newTasks}));
-                dispatch(setTaskForEdit({taskForEdit: null}));
             })
             .catch(err => {
                 throw new Error(`Something happened while updating task. [${err}]`);
@@ -111,6 +112,23 @@ function App({tasks, taskForEdit, loading, dispatch}) {
     const handleOnClickCloseTaskModal = () => {
         dispatch(setTaskForEdit({taskForEdit: null}));
     };
+
+    const handleOnChangeCheckbox = (taskId) => {
+        const newTasks = tasks.map(task => {
+            if (task._id === taskId) {
+                return {
+                    ...task,
+                    isCompleted: !task.isCompleted
+                }
+            } else {
+                return task;
+            }
+        });
+
+        console.log("newTasks", newTasks); // todo delete
+        dispatch(setTasks({tasks: newTasks}));
+    };
+
 
     const menu = (taskId) => {
         return (
@@ -123,14 +141,21 @@ function App({tasks, taskForEdit, loading, dispatch}) {
 
     const columns = [
         {
+            title: 'Completed',
+            key: 'completed',
+            render: (text, record) => (
+                <span>
+                    <Checkbox
+                        onChange={() => handleOnChangeCheckbox(record._id)}
+                        checked={record.isCompleted}
+                    />
+                </span>
+            ),
+        },
+        {
             title: 'Description',
             dataIndex: 'description',
             key: 'description',
-        },
-        {
-            title: 'Completed',
-            dataIndex: 'isCompleted',
-            key: 'isCompleted',
         },
         {
             title: 'Action',
