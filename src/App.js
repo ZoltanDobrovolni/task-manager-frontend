@@ -73,7 +73,18 @@ function App({tasks, taskForEdit, loading, dispatch}) {
         if (typeof taskForEdit._id === "undefined") {
             saveNewTask(description);
         } else {
-            updateTask(description);
+            dispatch(setTaskForEdit({taskForEdit: null}));
+            dispatch(loadingOff());
+
+            updateTask({...taskForEdit, description})
+                .then(result => {
+                    const newTasks = tasks.filter(task => task._id !== taskForEdit._id);
+                    newTasks.push(result.data);
+                    dispatch(setTasks({tasks: newTasks}));
+                })
+                .catch(err => {
+                    throw new Error(`Something happened while updating task. [${err}]`);
+                });
         }
     };
 
@@ -92,20 +103,12 @@ function App({tasks, taskForEdit, loading, dispatch}) {
             })
     }
 
-    function updateTask(description) {
-        axios({
+    function updateTask(taskForEdit) {
+        return axios({
             method: "PATCH",
             url: `${baseUrl}/tasks/${taskForEdit._id}`,
-            data: {...taskForEdit, description}
-        })
-            .then(result => {
-                const newTasks = tasks.filter(task => task._id !== taskForEdit._id);
-                newTasks.push(result.data);
-                dispatch(setTasks({tasks: newTasks}));
-            })
-            .catch(err => {
-                throw new Error(`Something happened while updating task. [${err}]`);
-            })
+            data: taskForEdit
+        });
     }
 
 
@@ -113,8 +116,30 @@ function App({tasks, taskForEdit, loading, dispatch}) {
         dispatch(setTaskForEdit({taskForEdit: null}));
     };
 
-    const handleOnChangeCheckbox = (taskId) => {
-        const newTasks = tasks.map(task => {
+    const handleOnChangeCheckbox = async (taskForEdit) => {
+        try {
+            const result = await updateTask({...taskForEdit, isCompleted: !taskForEdit.isCompleted});
+            dispatch(setTasks({tasks: getUpdateTasksArray(result.data)}));
+        } catch (e) {
+            throw new Error(`Something happened while updating task. [${e}]`);
+        }
+    };
+
+    const getUpdateTasksArray = (updatedTask) => {
+        return tasks.map(task => {
+            if (task._id === updatedTask._id) {
+                return {
+                    ...task,
+                    ...updatedTask
+                }
+            } else {
+                return task;
+            }
+        });
+    };
+
+    const toggleIsCompletedKeyInTasks = (taskId) => {
+        return tasks.map(task => {
             if (task._id === taskId) {
                 return {
                     ...task,
@@ -124,10 +149,9 @@ function App({tasks, taskForEdit, loading, dispatch}) {
                 return task;
             }
         });
+    }
 
-        console.log("newTasks", newTasks); // todo delete
-        dispatch(setTasks({tasks: newTasks}));
-    };
+
 
 
     const menu = (taskId) => {
@@ -146,7 +170,7 @@ function App({tasks, taskForEdit, loading, dispatch}) {
             render: (text, record) => (
                 <span>
                     <Checkbox
-                        onChange={() => handleOnChangeCheckbox(record._id)}
+                        onChange={() => handleOnChangeCheckbox(record)}
                         checked={record.isCompleted}
                     />
                 </span>
