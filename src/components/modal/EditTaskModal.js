@@ -1,20 +1,30 @@
 import React, {useState} from 'react';
-import {Input, Modal} from "antd";
+import {DatePicker, Input, Modal} from "antd";
+import moment from 'moment';
 
-const EditTaskModal = ({isVisible, description, handleOnClickSave, handleOnClickCancel}) => {
+const EditTaskModal = ({isVisible, description, dueDate, handleOnClickSave, handleOnClickCancel}) => {
+
+    const dateFormat = 'YYYY/MM/DD';
 
     const [currentDescription , setDescription] = useState(description || "");
+    const [currentDueDate, setCurrentDueDate] = useState(dueDate);
 
     const handleOnChangeInputField = (value) => {
         setDescription(value);
     };
+
+    const handleOnClickOkInDatePicker = (value) => {
+        console.log("value datepicker", value); // todo delete
+        setCurrentDueDate(value);
+    }
+
 
     return (
         <>
             <Modal
                 title="Basic Modal"
                 visible={isVisible}
-                onOk={() => handleOnClickSave(currentDescription)}
+                onOk={() => handleOnClickSave(currentDescription, currentDueDate)}
                 onCancel={handleOnClickCancel}
                 okText={"Save"}
             >
@@ -22,9 +32,16 @@ const EditTaskModal = ({isVisible, description, handleOnClickSave, handleOnClick
                 <Input
                     value={currentDescription}
                     placeholder="Your task description"
+                    autoFocus
                     onChange={event => {
                         handleOnChangeInputField(event.target.value)
                     }}
+                />
+                <br />
+                <DatePicker
+                    defaultValue={moment(currentDueDate, dateFormat)}
+                    format={dateFormat}
+                    onChange={(value) => handleOnClickOkInDatePicker(value.toISOString())}
                 />
             </Modal>
         </>

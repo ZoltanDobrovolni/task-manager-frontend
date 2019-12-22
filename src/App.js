@@ -1,42 +1,47 @@
 import React, {useEffect} from 'react';
 import 'antd/dist/antd.css';
 import axios from 'axios';
-import {Button, Checkbox, Divider, Dropdown, Icon, Layout, Menu, Table} from "antd";
+import {Button, Checkbox, Dropdown, Icon, Layout, Menu, Table} from "antd";
 import {setTaskForEdit} from "./actions/taskForEdit";
 import {setTasks} from "./actions/tasks";
 import {loadingOff, loadingOn} from "./actions/loading";
 import {connect} from "react-redux";
 import EditTaskModal from "./components/modal/EditTaskModal";
+import moment from "moment";
 
 const {Content} = Layout;
 
 function App({tasks, taskForEdit, loading, dispatch}) {
+    const dateFormat = 'YYYY/MM/DD';
+
     const baseUrl = 'http://localhost:3002'; // todo configba
 
     useEffect(() => {
-
-        getTasks();
+        fetchAndSetTasks();
 
     }, []);
 
-
-    const getTasks = async () => {
+    async function fetchAndSetTasks() {
         try {
-            const tasks = await axios.get(baseUrl + '/tasks');
-            const tasksWithKey = tasks.data.map(item => ({
-                key: item._id,
-                ...item
-            }));
-
-            console.log("tasks", tasksWithKey); // todo delete
-
-            dispatch(setTasks({tasks: tasksWithKey}))
-            dispatch(loadingOff())
+            const tasks = await getTasks();
+            dispatch(setTasks({tasks}));
+            dispatch(loadingOff());
         } catch (error) {
             alert(error);
             dispatch(loadingOff())
         }
 
+    };
+
+    const getTasks = async () => {
+        const tasks = await axios.get(baseUrl + '/tasks');
+        const tasksWithKey = tasks.data.map(item => ({
+            key: item._id,
+            ...item
+        }));
+
+        console.log("tasks", tasksWithKey); // todo delete
+        return tasksWithKey;
     };
 
     const handleOnClickAddTask = () => {
@@ -69,38 +74,43 @@ function App({tasks, taskForEdit, loading, dispatch}) {
         }))
     };
 
-    const handleOnClickSaveTaskModal = (description) => {
+    const handleOnClickSaveTaskModal = async (description, dueDate) => {
+        dispatch(loadingOn());
         if (typeof taskForEdit._id === "undefined") {
-            saveNewTask(description);
+            try {
+                const newTask = await saveNewTask(description, dueDate);
+                dispatch(loadingOff());
+                dispatch(setTasks({tasks: [...tasks, {key: newTask.data._id, ...newTask.data}]}));
+            } catch (err) {
+                dispatch(loadingOff());
+                dispatch(setTaskForEdit({taskForEdit: null}));
+                throw new Error(`Something happened while saving task. [${err}]`);
+            }
         } else {
-            dispatch(setTaskForEdit({taskForEdit: null}));
-            dispatch(loadingOff());
+            try {
+                const result = await updateTask({...taskForEdit, description})
+                const newTasks = tasks.filter(task => task._id !== taskForEdit._id);
+                newTasks.push(result.data);
+                dispatch(setTasks({tasks: newTasks}));
+                dispatch(loadingOff());
+                dispatch(setTaskForEdit({taskForEdit: null}));
 
-            updateTask({...taskForEdit, description})
-                .then(result => {
-                    const newTasks = tasks.filter(task => task._id !== taskForEdit._id);
-                    newTasks.push(result.data);
-                    dispatch(setTasks({tasks: newTasks}));
-                })
-                .catch(err => {
-                    throw new Error(`Something happened while updating task. [${err}]`);
-                });
+            } catch (err) {
+                dispatch(loadingOff());
+                dispatch(setTaskForEdit({taskForEdit: null}));
+                throw new Error(`Something happened while updating task. [${err}]`);
+            }
+
         }
     };
 
-    function saveNewTask(description) {
-        axios({
+    async function saveNewTask(description, dueDate) {
+        return axios({
             method: "POST",
             url: `${baseUrl}/tasks`,
-            data: {...taskForEdit, description}
-        })
-            .then(result => {
-                dispatch(setTaskForEdit({taskForEdit: null}));
-                dispatch(setTasks({tasks: [...tasks, {key: result.data._id, ...result.data}]}));
-            })
-            .catch(err => {
-                throw new Error(`Something happened while saving task. [${err}]`);
-            })
+            data: {...taskForEdit, description, dueDate}
+        });
+
     }
 
     function updateTask(taskForEdit) {
@@ -110,7 +120,6 @@ function App({tasks, taskForEdit, loading, dispatch}) {
             data: taskForEdit
         });
     }
-
 
     const handleOnClickCloseTaskModal = () => {
         dispatch(setTaskForEdit({taskForEdit: null}));
@@ -137,22 +146,6 @@ function App({tasks, taskForEdit, loading, dispatch}) {
             }
         });
     };
-
-    const toggleIsCompletedKeyInTasks = (taskId) => {
-        return tasks.map(task => {
-            if (task._id === taskId) {
-                return {
-                    ...task,
-                    isCompleted: !task.isCompleted
-                }
-            } else {
-                return task;
-            }
-        });
-    }
-
-
-
 
     const menu = (taskId) => {
         return (
@@ -182,12 +175,17 @@ function App({tasks, taskForEdit, loading, dispatch}) {
             key: 'description',
         },
         {
+            title: 'Due Date',
+            dataIndex: 'dueDate',
+            key: 'dueDate',
+        },
+        {
             title: 'Action',
             key: 'action',
             render: (text, record) => (
                 <span>
-                    <a onClick={() => handleOnClickReschedule(record._id)}>Reschedule</a>
-                    <Divider type="vertical"/>
+                    {/*<a onClick={() => handleOnClickReschedule(record._id)}>Reschedule</a>*/}
+                    {/*<Divider type="vertical"/>*/}
 
                     <a className="ant-dropdown-link">
                          <Dropdown overlay={menu(record._id)}>
@@ -201,20 +199,20 @@ function App({tasks, taskForEdit, loading, dispatch}) {
         },
     ];
 
-
+    const tasksWithFormattedDate = tasks.map(task => ({...task, dueDate: moment(task.dueDate, dateFormat)}));
     return (
-            <Content style={{margin: '24px 16px 0', overflow: 'initial'}}>
-                {taskForEdit !== null &&
-                <EditTaskModal handleOnClickCancel={handleOnClickCloseTaskModal}
-                               handleOnClickSave={handleOnClickSaveTaskModal}
-                               isVisible={taskForEdit !== null}
-                               description={taskForEdit.description || ""}/>
-                }
-                <Button type="primary" onClick={handleOnClickAddTask}>
-                    Add task
-                </Button>
-                <Table dataSource={tasks} columns={columns} loading={loading}/>
-            </Content>
+        <Content style={{margin: '24px 16px 0', overflow: 'initial'}}>
+            {taskForEdit !== null &&
+            <EditTaskModal handleOnClickCancel={handleOnClickCloseTaskModal}
+                           handleOnClickSave={handleOnClickSaveTaskModal}
+                           isVisible={taskForEdit !== null}
+                           description={taskForEdit.description || ""}/>
+            }
+            <Button type="primary" onClick={handleOnClickAddTask}>
+                Add task
+            </Button>
+            <Table dataSource={tasksWithFormattedDate} columns={columns} loading={loading}/>
+        </Content>
     );
 }
 
