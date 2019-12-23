@@ -12,7 +12,9 @@ import moment from "moment";
 const {Content} = Layout;
 
 function App({tasks, taskForEdit, loading, dispatch}) {
-    const dateFormat = 'YYYY/MM/DD';
+    const displayDateFormat = 'YYYY/MM/DD';
+    const isoDateFormatFromDb = "YYYY-MM-DDTHH:mm:ss.sssZ";
+
 
     const baseUrl = 'http://localhost:3002'; // todo configba
 
@@ -40,7 +42,6 @@ function App({tasks, taskForEdit, loading, dispatch}) {
             ...item
         }));
 
-        console.log("tasks", tasksWithKey); // todo delete
         return tasksWithKey;
     };
 
@@ -88,7 +89,7 @@ function App({tasks, taskForEdit, loading, dispatch}) {
             }
         } else {
             try {
-                const result = await updateTask({...taskForEdit, description})
+                const result = await updateTask({...taskForEdit, description, dueDate})
                 const newTasks = tasks.filter(task => task._id !== taskForEdit._id);
                 newTasks.push(result.data);
                 dispatch(setTasks({tasks: newTasks}));
@@ -199,14 +200,20 @@ function App({tasks, taskForEdit, loading, dispatch}) {
         },
     ];
 
-    const tasksWithFormattedDate = tasks.map(task => ({...task, dueDate: moment(task.dueDate, dateFormat)}));
+    const tasksWithFormattedDate = tasks.map(task => ({
+        ...task,
+        dueDate: task.dueDate === null ? '' : moment(task.dueDate, isoDateFormatFromDb).format(displayDateFormat)
+    }));
+    console.log("tasks formatted date ", tasksWithFormattedDate); // todo delete
     return (
         <Content style={{margin: '24px 16px 0', overflow: 'initial'}}>
             {taskForEdit !== null &&
             <EditTaskModal handleOnClickCancel={handleOnClickCloseTaskModal}
                            handleOnClickSave={handleOnClickSaveTaskModal}
                            isVisible={taskForEdit !== null}
-                           description={taskForEdit.description || ""}/>
+                           description={taskForEdit.description || ""}
+                           dueDate={taskForEdit.dueDate || null}
+            />
             }
             <Button type="primary" onClick={handleOnClickAddTask}>
                 Add task

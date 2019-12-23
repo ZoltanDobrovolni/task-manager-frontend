@@ -4,7 +4,8 @@ import moment from 'moment';
 
 const EditTaskModal = ({isVisible, description, dueDate, handleOnClickSave, handleOnClickCancel}) => {
 
-    const dateFormat = 'YYYY/MM/DD';
+    const displayDateFormat = 'YYYY/MM/DD';
+    const isoDateFormatFromDb = "YYYY-MM-DDTHH:mm:ss.sssZ";
 
     const [currentDescription , setDescription] = useState(description || "");
     const [currentDueDate, setCurrentDueDate] = useState(dueDate);
@@ -14,10 +15,10 @@ const EditTaskModal = ({isVisible, description, dueDate, handleOnClickSave, hand
     };
 
     const handleOnClickOkInDatePicker = (value) => {
-        console.log("value datepicker", value); // todo delete
         setCurrentDueDate(value);
     }
 
+    const defaultDateValue = currentDueDate === null ? null : moment(currentDueDate, isoDateFormatFromDb);
 
     return (
         <>
@@ -37,10 +38,10 @@ const EditTaskModal = ({isVisible, description, dueDate, handleOnClickSave, hand
                         handleOnChangeInputField(event.target.value)
                     }}
                 />
-                <br />
+                <br/>
                 <DatePicker
-                    defaultValue={moment(currentDueDate, dateFormat)}
-                    format={dateFormat}
+                    defaultValue={defaultDateValue}
+                    format={displayDateFormat}
                     onChange={(value) => handleOnClickOkInDatePicker(value.toISOString())}
                 />
             </Modal>
