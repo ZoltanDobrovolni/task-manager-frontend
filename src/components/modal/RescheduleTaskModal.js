@@ -24,7 +24,6 @@ const RescheduleTaskModal = ({isVisible, dueDate, handleOnClickSave, handleOnCli
                 onCancel={handleOnClickCancel}
                 okText={"Save"}
             >
-                <p>"Reschedule task"</p>
                 <br/>
                 <DatePicker
                     defaultValue={defaultDateValue}
