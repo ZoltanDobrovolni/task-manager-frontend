@@ -23,29 +23,19 @@ function App({tasks, taskForEdit, taskForReschedule, loading, dispatch}) {
 
     useEffect(() => {
         fetchAndSetTasks();
-
     }, []);
 
     async function fetchAndSetTasks() {
         try {
-            const tasks = await getTasks();
-            dispatch(setTasks({tasks}));
+            const tasks = await axios.get(baseUrl + '/tasks');
+
+            dispatch(setTasks({tasks: tasks.data}));
             dispatch(loadingOff());
         } catch (error) {
             alert(error);
             dispatch(loadingOff())
         }
 
-    };
-
-    const getTasks = async () => {
-        const tasks = await axios.get(baseUrl + '/tasks');
-        const tasksWithKey = tasks.data.map(item => ({
-            key: item._id,
-            ...item
-        }));
-
-        return tasksWithKey;
     };
 
     const handleOnClickAddTask = () => {
@@ -236,7 +226,6 @@ function App({tasks, taskForEdit, taskForReschedule, loading, dispatch}) {
         ...task,
         dueDate: task.dueDate === null ? '' : moment(task.dueDate, isoDateFormatFromDb).format(displayDateFormat)
     }));
-    console.log("tasks formatted date ", tasksWithFormattedDate); // todo delete
     return (
         <Content style={{margin: '24px 16px 0', overflow: 'initial'}}>
             {taskForEdit !== null &&
