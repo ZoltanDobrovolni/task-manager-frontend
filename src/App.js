@@ -19,7 +19,8 @@ function App({tasks, taskForEdit, taskForReschedule, loading, dispatch}) {
     const displayDateFormat = 'YYYY/MM/DD';
     const isoDateFormatFromDb = "YYYY-MM-DDTHH:mm:ss.sssZ";
 
-    const baseUrl = 'http://localhost:3002'; // todo configba
+    // const baseUrl = 'http://localhost:3002'; // todo configba
+    const baseUrl = ' https://ftv5pqhqie.execute-api.eu-central-1.amazonaws.com/dev'; // todo configba
 
     useEffect(() => {
         fetchAndSetTasks();
