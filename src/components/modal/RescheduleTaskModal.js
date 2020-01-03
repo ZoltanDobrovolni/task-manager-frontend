@@ -1,18 +1,13 @@
 import React, {useState} from 'react';
-import {DatePicker, Input, Modal} from "antd";
+import {DatePicker, Modal} from "antd";
 import moment from 'moment';
 
-const EditTaskModal = ({isVisible, description, dueDate, handleOnClickSave, handleOnClickCancel}) => {
+const RescheduleTaskModal = ({isVisible, dueDate, handleOnClickSave, handleOnClickCancel}) => {
 
     const displayDateFormat = 'YYYY/MM/DD';
     const isoDateFormatFromDb = "YYYY-MM-DDTHH:mm:ss.sssZ";
 
-    const [currentDescription , setDescription] = useState(description || "");
     const [currentDueDate, setCurrentDueDate] = useState(dueDate);
-
-    const handleOnChangeInputField = (value) => {
-        setDescription(value);
-    };
 
     const handleOnClickOkInDatePicker = (value) => {
         setCurrentDueDate(value);
@@ -23,21 +18,13 @@ const EditTaskModal = ({isVisible, description, dueDate, handleOnClickSave, hand
     return (
         <>
             <Modal
-                title="Create or edit task"
+                title="Reschedule"
                 visible={isVisible}
-                onOk={() => handleOnClickSave(currentDescription, currentDueDate)}
+                onOk={() => handleOnClickSave(currentDueDate)}
                 onCancel={handleOnClickCancel}
                 okText={"Save"}
             >
-                <Input
-                    value={currentDescription}
-                    placeholder="Your task description"
-                    autoFocus
-                    onChange={event => {
-                        handleOnChangeInputField(event.target.value)
-                    }}
-                />
-                <br/>
+                <p>"Reschedule task"</p>
                 <br/>
                 <DatePicker
                     defaultValue={defaultDateValue}
@@ -49,4 +36,4 @@ const EditTaskModal = ({isVisible, description, dueDate, handleOnClickSave, hand
     );
 };
 
-export default EditTaskModal;
+export default RescheduleTaskModal;

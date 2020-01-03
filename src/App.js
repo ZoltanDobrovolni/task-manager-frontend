@@ -8,13 +8,16 @@ import {loadingOff, loadingOn} from "./actions/loading";
 import {connect} from "react-redux";
 import EditTaskModal from "./components/modal/EditTaskModal";
 import moment from "moment";
+import {setTaskForReschedule} from "./actions/taskForReschedule";
+import Divider from "antd/es/divider";
+import RescheduleTaskModal from "./components/modal/RescheduleTaskModal";
 
 const {Content} = Layout;
 
-function App({tasks, taskForEdit, loading, dispatch}) {
+function App({tasks, taskForEdit, taskForReschedule, loading, dispatch}) {
+
     const displayDateFormat = 'YYYY/MM/DD';
     const isoDateFormatFromDb = "YYYY-MM-DDTHH:mm:ss.sssZ";
-
 
     const baseUrl = 'http://localhost:3002'; // todo configba
 
@@ -65,11 +68,12 @@ function App({tasks, taskForEdit, loading, dispatch}) {
     };
 
     const handleOnClickReschedule = (id) => {
-        console.log("onClick Reschedule", id); // todo delete
+        dispatch(setTaskForReschedule({
+            taskForReschedule: tasks.find(task => task._id === id)
+        }));
     };
 
     const handleOnClickEdit = (id) => {
-        console.log("task to edit", tasks.find((task) => task._id === id));
         dispatch(setTaskForEdit({
             taskForEdit: tasks.find((task) => task._id === id)
         }))
@@ -90,8 +94,12 @@ function App({tasks, taskForEdit, loading, dispatch}) {
         } else {
             try {
                 const result = await updateTask({...taskForEdit, description, dueDate})
-                const newTasks = tasks.filter(task => task._id !== taskForEdit._id);
-                newTasks.push(result.data);
+                const newTasks = tasks.map(task => {
+                    if (task._id === taskForEdit._id) {
+                        return result.data;
+                    }
+                    return task;
+                });
                 dispatch(setTasks({tasks: newTasks}));
                 dispatch(loadingOff());
                 dispatch(setTaskForEdit({taskForEdit: null}));
@@ -105,13 +113,33 @@ function App({tasks, taskForEdit, loading, dispatch}) {
         }
     };
 
+    const handleOnClickSaveRescheduleModal = async (dueDate) => {
+        dispatch(loadingOn());
+        try {
+            const result = await updateTask({...taskForReschedule, dueDate})
+            const newTasks = tasks.map(task => {
+                if (task._id === taskForReschedule._id) {
+                    return result.data;
+                }
+                return task;
+            });
+            dispatch(setTasks({tasks: newTasks}));
+            dispatch(loadingOff());
+            dispatch(setTaskForReschedule({taskForReschedule: null}));
+
+        } catch (err) {
+            dispatch(loadingOff());
+            dispatch(setTaskForReschedule({taskForReschedule: null}));
+            throw new Error(`Something happened while updating task. [${err}]`);
+        }
+    };
+
     async function saveNewTask(description, dueDate) {
         return axios({
             method: "POST",
             url: `${baseUrl}/tasks`,
             data: {...taskForEdit, description, dueDate}
         });
-
     }
 
     function updateTask(taskForEdit) {
@@ -124,6 +152,10 @@ function App({tasks, taskForEdit, loading, dispatch}) {
 
     const handleOnClickCloseTaskModal = () => {
         dispatch(setTaskForEdit({taskForEdit: null}));
+    };
+
+    const handleOnClickCloseRescheduleModal = () => {
+        dispatch(setTaskForReschedule({taskForReschedule: null}));
     };
 
     const handleOnChangeCheckbox = async (taskForEdit) => {
@@ -185,8 +217,8 @@ function App({tasks, taskForEdit, loading, dispatch}) {
             key: 'action',
             render: (text, record) => (
                 <span>
-                    {/*<a onClick={() => handleOnClickReschedule(record._id)}>Reschedule</a>*/}
-                    {/*<Divider type="vertical"/>*/}
+                    <a onClick={() => handleOnClickReschedule(record._id)}>Reschedule</a>
+                    <Divider type="vertical"/>
 
                     <a className="ant-dropdown-link">
                          <Dropdown overlay={menu(record._id)}>
@@ -208,13 +240,23 @@ function App({tasks, taskForEdit, loading, dispatch}) {
     return (
         <Content style={{margin: '24px 16px 0', overflow: 'initial'}}>
             {taskForEdit !== null &&
-            <EditTaskModal handleOnClickCancel={handleOnClickCloseTaskModal}
-                           handleOnClickSave={handleOnClickSaveTaskModal}
-                           isVisible={taskForEdit !== null}
-                           description={taskForEdit.description || ""}
-                           dueDate={taskForEdit.dueDate || null}
+            <EditTaskModal
+                handleOnClickCancel={handleOnClickCloseTaskModal}
+                handleOnClickSave={handleOnClickSaveTaskModal}
+                isVisible={taskForEdit !== null}
+                description={taskForEdit.description || ""}
+                dueDate={taskForEdit.dueDate || null}
             />
             }
+            {taskForReschedule !== null &&
+            <RescheduleTaskModal
+                handleOnClickCancel={handleOnClickCloseRescheduleModal}
+                handleOnClickSave={handleOnClickSaveRescheduleModal}
+                isVisible={taskForReschedule !== null}
+                dueDate={taskForReschedule.dueDate || null}
+            />
+            }
+
             <Button type="primary" onClick={handleOnClickAddTask}>
                 Add task
             </Button>
@@ -226,6 +268,7 @@ function App({tasks, taskForEdit, loading, dispatch}) {
 const mapStateToProps = (state) => ({
     tasks: state.tasks,
     taskForEdit: state.taskForEdit,
+    taskForReschedule: state.taskForReschedule,
     loading: state.loading
 });
 
