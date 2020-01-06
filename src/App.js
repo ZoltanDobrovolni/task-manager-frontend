@@ -48,7 +48,7 @@ function App({tasks, taskForEdit, taskForReschedule, loading, dispatch}) {
         try {
             await axios.delete(baseUrl + `/tasks/${id}`);
             dispatch(setTasks({
-                tasks: tasks.filter((item) => item._id !== id)
+                tasks: tasks.filter((item) => item.id !== id)
             }));
             dispatch(loadingOff())
         } catch (e) {
@@ -60,23 +60,23 @@ function App({tasks, taskForEdit, taskForReschedule, loading, dispatch}) {
 
     const handleOnClickReschedule = (id) => {
         dispatch(setTaskForReschedule({
-            taskForReschedule: tasks.find(task => task._id === id)
+            taskForReschedule: tasks.find(task => task.id === id)
         }));
     };
 
     const handleOnClickEdit = (id) => {
         dispatch(setTaskForEdit({
-            taskForEdit: tasks.find((task) => task._id === id)
+            taskForEdit: tasks.find((task) => task.id === id)
         }))
     };
 
     const handleOnClickSaveTaskModal = async (description, dueDate) => {
         dispatch(loadingOn());
-        if (typeof taskForEdit._id === "undefined") {
+        if (typeof taskForEdit.id === "undefined") {
             try {
                 const newTask = await saveNewTask(description, dueDate);
                 dispatch(loadingOff());
-                dispatch(setTasks({tasks: [...tasks, {key: newTask.data._id, ...newTask.data}]}));
+                dispatch(setTasks({tasks: [...tasks, {key: newTask.data.id, ...newTask.data}]}));
             } catch (err) {
                 dispatch(loadingOff());
                 dispatch(setTaskForEdit({taskForEdit: null}));
@@ -86,7 +86,7 @@ function App({tasks, taskForEdit, taskForReschedule, loading, dispatch}) {
             try {
                 const result = await updateTask({...taskForEdit, description, dueDate})
                 const newTasks = tasks.map(task => {
-                    if (task._id === taskForEdit._id) {
+                    if (task.id === taskForEdit.id) {
                         return result.data;
                     }
                     return task;
@@ -109,7 +109,7 @@ function App({tasks, taskForEdit, taskForReschedule, loading, dispatch}) {
         try {
             const result = await updateTask({...taskForReschedule, dueDate})
             const newTasks = tasks.map(task => {
-                if (task._id === taskForReschedule._id) {
+                if (task.id === taskForReschedule.id) {
                     return result.data;
                 }
                 return task;
@@ -136,7 +136,7 @@ function App({tasks, taskForEdit, taskForReschedule, loading, dispatch}) {
     function updateTask(taskForEdit) {
         return axios({
             method: "PATCH",
-            url: `${baseUrl}/tasks/${taskForEdit._id}`,
+            url: `${baseUrl}/tasks/${taskForEdit.id}`,
             data: taskForEdit
         });
     }
@@ -160,7 +160,7 @@ function App({tasks, taskForEdit, taskForReschedule, loading, dispatch}) {
 
     const getUpdateTasksArray = (updatedTask) => {
         return tasks.map(task => {
-            if (task._id === updatedTask._id) {
+            if (task.id === updatedTask.id) {
                 return {
                     ...task,
                     ...updatedTask
@@ -208,11 +208,11 @@ function App({tasks, taskForEdit, taskForReschedule, loading, dispatch}) {
             key: 'action',
             render: (text, record) => (
                 <span>
-                    <a onClick={() => handleOnClickReschedule(record._id)}>Reschedule</a>
+                    <a onClick={() => handleOnClickReschedule(record.id)}>Reschedule</a>
                     <Divider type="vertical"/>
 
                     <a className="ant-dropdown-link">
-                         <Dropdown overlay={menu(record._id)}>
+                         <Dropdown overlay={menu(record.id)}>
                           <a>
                             More <Icon type="down"/>
                           </a>
