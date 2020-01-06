@@ -77,6 +77,7 @@ function App({tasks, taskForEdit, taskForReschedule, loading, dispatch}) {
                 const newTask = await saveNewTask(description, dueDate);
                 dispatch(loadingOff());
                 dispatch(setTasks({tasks: [...tasks, {key: newTask.data.id, ...newTask.data}]}));
+                dispatch(setTaskForEdit({taskForEdit: null}));
             } catch (err) {
                 dispatch(loadingOff());
                 dispatch(setTaskForEdit({taskForEdit: null}));
